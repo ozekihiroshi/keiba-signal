@@ -1,0 +1,2 @@
+# Filament v4: Auth ページの use 文と form() を安全に補正（$1 残骸も自動修復）
+scripts/patch_filament_v4_auth_usefix.php
