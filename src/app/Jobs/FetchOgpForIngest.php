@@ -19,21 +19,22 @@ class FetchOgpForIngest implements ShouldQueue
     public function handle(): void
     {
         $ingest = Ingest::find($this->ingestId);
-        if (!$ingest) return;
+        if (!$ingest || empty($ingest->url)) return;
 
-        // すでに画像があるなら何もしない
-        if (!empty($ingest->image_url)) return;
-        if (empty($ingest->url)) return;
+        // 既に画像があっても「汎用OGP」なら取り直す
+        $hasGeneric = $ingest->image_url && preg_match('#/common/img/ogp\.jpg$#i', $ingest->image_url);
+        if (!empty($ingest->image_url) && !$hasGeneric) {
+            return;
+        }
 
         $client = OgpClient::fromConfig();
         $og = $client->fetch($ingest->url);
 
         $dirty = false;
-        if (($og['image'] ?? '') !== '') {
+        if (!empty($og['image'])) {
             $ingest->image_url = $og['image'];
             $dirty = true;
         }
-        // description が空なら、OGP説明で穴を埋める
         if (empty($ingest->summary_raw) && !empty($og['description'])) {
             $ingest->summary_raw = $og['description'];
             $dirty = true;

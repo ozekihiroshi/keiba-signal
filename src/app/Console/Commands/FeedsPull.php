@@ -1,22 +1,21 @@
 <?php
-
 namespace App\Console\Commands;
 
+use App\Jobs\FetchOgpForIngest;
+use App\Jobs\SummarizeIngestJob;
 use App\Models\Ingest;
 use App\Models\Source;
 use App\Services\Feeds\JraRssClient;
 use Illuminate\Console\Command;
-use App\Jobs\SummarizeIngestJob;
-use App\Jobs\FetchOgpForIngest;
 
 class FeedsPull extends Command
 {
-    protected $signature = 'feeds:pull {--source=jra}';
+    protected $signature   = 'feeds:pull {--source=jra}';
     protected $description = 'Pull news feeds and upsert into ingests';
 
     public function handle(): int
     {
-        $sourceOpt = strtolower((string)$this->option('source'));
+        $sourceOpt = strtolower((string) $this->option('source'));
 
         if ($sourceOpt !== 'jra') {
             $this->error("Unknown source: {$sourceOpt}");
@@ -28,22 +27,22 @@ class FeedsPull extends Command
         $source = Source::query()->firstOrCreate(
             ['code' => 'jra'],
             [
-                'name' => 'Horse Racing in Japan (JRA, English RSS)',
-                'type' => 'rss',
-                'base_url' => 'https://japanracing.jp/en/',
-                'rss_url' => config('feeds.sources.jra.url'),
-                'license_tag' => config('feeds.sources.jra.license_tag'),
-                'robots_allowed' => true,
+                'name'                   => 'Horse Racing in Japan (JRA, English RSS)',
+                'type'                   => 'rss',
+                'base_url'               => 'https://japanracing.jp/en/',
+                'rss_url'                => config('feeds.sources.jra.url'),
+                'license_tag'            => config('feeds.sources.jra.license_tag'),
+                'robots_allowed'         => true,
                 'fetch_interval_minutes' => 30,
             ]
         );
 
-        $items = $client->fetch();
+        $items       = $client->fetch();
         $countUpsert = 0;
 
         foreach ($items as $it) {
-            $url  = (string)($it['url'] ?? '');
-            $guid = (string)($it['guid'] ?? '');
+            $url  = (string) ($it['url'] ?? '');
+            $guid = (string) ($it['guid'] ?? '');
 
             if ($url === '' && $guid === '') {
                 continue;
@@ -75,7 +74,7 @@ class FeedsPull extends Command
             if (empty($ingest->summary)) {
                 SummarizeIngestJob::dispatch($ingest->id);
             }
-            if (empty($ingest->image_url) && !empty($ingest->url)) {
+            if (empty($ingest->image_url) && ! empty($ingest->url)) {
                 FetchOgpForIngest::dispatch($ingest->id);
             }
 
@@ -83,6 +82,8 @@ class FeedsPull extends Command
         }
 
         $source->update(['last_fetched_at' => now()]);
+        // 末尾の updateOrCreate() の後に追加
+        dispatch(new \App\Jobs\FetchArticleBodyForIngest($ingest->id));
 
         $this->info("Source={$sourceOpt} upserted={$countUpsert}");
         return self::SUCCESS;
