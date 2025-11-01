@@ -1,2 +1,0 @@
-# Filament v4: navigationIcon の型を親定義に揃える（?string → \BackedEnum|string|null）
-scripts/patch_filament_v4_navigation_icon.php

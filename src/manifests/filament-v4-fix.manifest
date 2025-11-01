@@ -1,2 +1,0 @@
-# Filament v4 の Resource::form() を Schema 仕様へ変換するパッチスクリプト
-scripts/patch_filament_v4_resource_form_signature.php

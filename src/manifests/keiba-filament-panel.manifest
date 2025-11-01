@@ -1,4 +1,0 @@
-app/Providers/Filament/AdminPanelProvider.php
-config/filament.php
-bootstrap/app.php
-app/Http/Kernel.php

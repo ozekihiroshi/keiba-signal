@@ -1,17 +1,18 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Frontend\IngestPublicController;
 
-Route::get("/", function () {
-    return view("welcome");
-});
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+| 既存のルーティングに影響を与えないよう、/news 配下のみを定義します。
+*/
 
-Route::get("/health", fn() => "ok");
-Route::match(["GET","POST"], "/login", fn() => redirect()->route("filament.admin.auth.login"))->name("login");
-Route::post('/admin/login', fn()=>redirect('/admin/login'));
+Route::get('/news', [IngestPublicController::class, 'index'])
+    ->name('news.index');
 
-Route::get("/__sess_put", function () { session(["_ts"=>time()]); return "put"; });
-Route::get("/__sess_get", function () { return "ts=".session("_ts","none"); });
-
-// added by patch_include_diag_routes.sh
-require base_path('routes/diag.php');
+Route::get('/news/{ingest}', [IngestPublicController::class, 'show'])
+    ->whereNumber('ingest')
+    ->name('news.show');
